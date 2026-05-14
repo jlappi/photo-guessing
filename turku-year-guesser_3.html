@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Turku — Photo Guessing Game</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,300;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+*, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+:root {
+  --navy:#1a2744; --gold:#c8a84b; --gold-light:#e8c96a;
+  --cream:#f4f0e8; --parchment:#e8e0d0;
+  --blue-marker:#4a7fa5; --red-marker:#c0472f;
+  --green-answer:#2a7d4f; --track:#c8c0b0;
+}
+html,body { width:100%; height:100%; background:var(--navy); font-family:'Crimson Pro',Georgia,serif; overflow:hidden; }
+
+.stage {
+  width:100vw; height:100vh; display:flex; flex-direction:column;
+  align-items:center; justify-content:center;
+  background:
+    radial-gradient(ellipse at 20% 50%, rgba(200,168,75,0.06) 0%, transparent 60%),
+    radial-gradient(ellipse at 80% 20%, rgba(74,127,165,0.08) 0%, transparent 50%),
+    var(--navy);
+  padding:2vh 3vw;
+}
+.stage::before {
+  content:''; position:fixed; inset:0;
+  background-image:linear-gradient(rgba(200,168,75,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(200,168,75,0.03) 1px,transparent 1px);
+  background-size:40px 40px; pointer-events:none;
+}
+.card {
+  width:100%; max-width:980px; background:var(--cream); border-radius:3px;
+  box-shadow:0 8px 48px rgba(0,0,0,0.45), 0 0 0 1px rgba(200,168,75,0.3);
+  overflow:hidden; display:flex; flex-direction:column;
+}
+.card::before { content:''; display:block; height:4px; background:linear-gradient(90deg,var(--gold) 0%,var(--gold-light) 50%,var(--gold) 100%); }
+
+/* Header */
+.card-header { background:var(--navy); padding:11px 28px; display:flex; align-items:center; justify-content:space-between; }
+.photo-badge { font-size:11px; font-weight:600; letter-spacing:3px; text-transform:uppercase; color:var(--gold); }
+.header-label { font-size:10px; letter-spacing:3px; text-transform:uppercase; color:rgba(255,255,255,0.3); min-width:90px; text-align:right; }
+
+/* Tabs */
+.tabs { display:flex; background:var(--navy); border-top:1px solid rgba(255,255,255,0.07); padding:0 28px; }
+.tab-btn {
+  padding:8px 20px; font-family:'Crimson Pro',serif; font-size:12px; font-weight:600;
+  letter-spacing:3px; text-transform:uppercase; color:rgba(255,255,255,0.35);
+  background:none; border:none; border-bottom:2px solid transparent;
+  cursor:pointer; transition:color 0.15s, border-color 0.15s; margin-bottom:-1px;
+}
+.tab-btn:hover { color:rgba(255,255,255,0.65); }
+.tab-btn.active { color:var(--gold); border-bottom-color:var(--gold); }
+
+/* Body */
+.card-body { display:flex; flex:1; min-height:0; }
+
+.photo-zone {
+  flex:1.4; background:#c8c0b0;
+  display:flex; align-items:center; justify-content:center;
+  min-height:250px; position:relative; overflow:hidden;
+}
+.photo-placeholder { display:flex; flex-direction:column; align-items:center; gap:10px; color:rgba(26,39,68,0.35); }
+.photo-placeholder svg { width:44px; height:44px; opacity:0.4; }
+.photo-placeholder span { font-size:13px; letter-spacing:1px; font-style:italic; }
+
+/* Map */
+#mapContainer { position:relative; flex:1.4; min-height:250px; display:none; }
+#mapContainer.active { display:block; }
+#map { width:100%; height:100%; }
+
+/* Crosshair */
+#crosshair { position:absolute; inset:0; pointer-events:none; z-index:500; display:none; }
+#crosshair.active { display:block; }
+#crosshair-h { position:absolute; left:0; right:0; height:1px; background:rgba(192,71,47,0.7); top:50%; }
+#crosshair-v { position:absolute; top:0; bottom:0; width:1px; background:rgba(192,71,47,0.7); left:50%; }
+#crosshair-center {
+  position:absolute; width:10px; height:10px; border-radius:50%;
+  background:var(--red-marker); border:2px solid #fff;
+  transform:translate(-50%,-50%); top:50%; left:50%;
+  box-shadow:0 0 0 3px rgba(192,71,47,0.25);
+}
+
+/* Panel */
+.panel { flex:1; padding:20px 22px; display:flex; flex-direction:column; gap:14px; border-left:1px solid var(--parchment); min-width:270px; }
+.tab-panel { display:none; flex-direction:column; gap:14px; flex:1; }
+.tab-panel.active { display:flex; }
+.panel-heading { font-size:10px; letter-spacing:4px; text-transform:uppercase; color:#999; text-align:center; }
+
+/* Year boxes */
+.year-boxes { display:flex; gap:10px; }
+.year-box { flex:1; border-radius:2px; padding:10px 6px 8px; text-align:center; border:2px solid; }
+.year-box.earliest { border-color:var(--blue-marker); background:rgba(74,127,165,0.06); }
+.year-box.latest   { border-color:var(--red-marker);  background:rgba(192,71,47,0.06); }
+.year-box-label { font-size:9px; letter-spacing:3px; text-transform:uppercase; font-weight:600; margin-bottom:3px; }
+.year-box.earliest .year-box-label { color:var(--blue-marker); }
+.year-box.latest   .year-box-label { color:var(--red-marker); }
+.year-box-value { font-family:'Playfair Display',serif; font-size:32px; font-weight:700; line-height:1; }
+.year-box.earliest .year-box-value { color:var(--blue-marker); }
+.year-box.latest   .year-box-value { color:var(--red-marker); }
+.year-box-value.pop { animation:pop 0.18s ease; }
+@keyframes pop { 0%{transform:scale(1)} 50%{transform:scale(1.12)} 100%{transform:scale(1)} }
+
+.divider { height:1px; background:var(--parchment); flex-shrink:0; }
+
+/* Buttons */
+.reveal-btn {
+  background:var(--navy); color:var(--gold); border:none; border-radius:2px;
+  padding:11px 16px; font-family:'Crimson Pro',serif; font-size:12px; font-weight:600;
+  letter-spacing:3px; text-transform:uppercase; cursor:pointer;
+  transition:background 0.2s, transform 0.1s; box-shadow:0 2px 10px rgba(0,0,0,0.15); width:100%;
+}
+.reveal-btn:hover { background:#243460; }
+.reveal-btn:active { transform:scale(0.98); }
+.reveal-btn.revealed { background:var(--green-answer); color:#fff; }
+
+.answer-panel { background:var(--navy); border-radius:2px; padding:11px 14px; text-align:center; display:none; animation:fadeUp 0.4s ease; }
+.answer-panel.visible { display:block; }
+@keyframes fadeUp { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+.answer-label { font-size:9px; letter-spacing:4px; text-transform:uppercase; color:var(--green-answer); margin-bottom:3px; }
+.answer-year  { font-family:'Playfair Display',serif; font-size:46px; font-weight:900; color:#fff; line-height:1; }
+.answer-note  { font-size:11px; color:rgba(255,255,255,0.5); font-style:italic; margin-top:5px; line-height:1.4; }
+
+.reset-btn {
+  background:transparent; border:1px solid rgba(26,39,68,0.2); border-radius:2px;
+  padding:7px; font-family:'Crimson Pro',serif; font-size:11px; letter-spacing:2px;
+  text-transform:uppercase; color:#aaa; cursor:pointer; width:100%;
+  transition:border-color 0.2s, color 0.2s; display:none; flex-shrink:0;
+}
+.reset-btn.visible { display:block; }
+.reset-btn:hover { border-color:var(--navy); color:var(--navy); }
+
+/* WHERE panel */
+.where-hint { font-size:11px; color:#aaa; font-style:italic; text-align:center; line-height:1.5; }
+.guess-list  { display:flex; flex-direction:column; gap:5px; overflow-y:auto; max-height:110px; flex-shrink:0; }
+.guess-item  { display:flex; align-items:center; gap:8px; padding:3px 0; border-bottom:1px solid var(--parchment); font-size:12px; }
+.guess-number {
+  width:20px; height:20px; border-radius:50%;
+  background:var(--navy); color:var(--gold);
+  font-family:'Playfair Display',serif; font-size:10px; font-weight:700;
+  display:flex; align-items:center; justify-content:center; flex-shrink:0;
+}
+.guess-label { flex:1; font-style:italic; color:#888; font-size:11px; }
+.guess-remove { background:none; border:none; color:#ccc; cursor:pointer; font-size:14px; line-height:1; padding:0 2px; transition:color 0.15s; }
+.guess-remove:hover { color:var(--red-marker); }
+
+/* Timeline */
+.timeline-section { padding:14px 28px 16px; background:var(--parchment); border-top:1px solid #ddd8cc; }
+.timeline-range-labels { display:flex; justify-content:space-between; font-size:10px; color:#aaa; letter-spacing:1px; margin-bottom:22px; }
+.timeline-track-wrap { position:relative; height:50px; margin:0 12px; }
+.timeline-track { position:absolute; top:50%; transform:translateY(-50%); left:0; right:0; height:6px; background:var(--track); border-radius:3px; }
+.timeline-fill { position:absolute; top:0; height:100%; background:rgba(200,168,75,0.45); border-radius:3px; transition:left 0.05s, width 0.05s; pointer-events:none; }
+.handle { position:absolute; top:50%; transform:translate(-50%,-50%); width:22px; height:22px; border-radius:50%; border:3px solid #fff; cursor:grab; z-index:10; box-shadow:0 2px 8px rgba(0,0,0,0.25); touch-action:none; }
+.handle:hover { box-shadow:0 3px 14px rgba(0,0,0,0.3); }
+.handle.earliest { background:var(--blue-marker); }
+.handle.latest   { background:var(--red-marker); }
+.handle-tip { position:absolute; bottom:calc(100% + 7px); left:50%; transform:translateX(-50%); background:var(--navy); color:#fff; font-family:'Playfair Display',serif; font-size:11px; font-weight:700; padding:3px 7px; border-radius:2px; white-space:nowrap; pointer-events:none; opacity:0; transition:opacity 0.15s; }
+.handle:hover .handle-tip, .handle.dragging .handle-tip { opacity:1; }
+.answer-marker { position:absolute; top:50%; transform:translate(-50%,-50%); pointer-events:none; display:none; animation:markerIn 0.5s cubic-bezier(0.34,1.56,0.64,1); z-index:20; }
+.answer-marker.visible { display:block; }
+@keyframes markerIn { from{transform:translate(-50%,-80%);opacity:0} to{transform:translate(-50%,-50%);opacity:1} }
+.answer-marker-flag { position:absolute; bottom:14px; left:1px; background:var(--green-answer); color:#fff; font-family:'Playfair Display',serif; font-size:11px; font-weight:700; padding:3px 8px; white-space:nowrap; transform:translateX(-4px); border-radius:1px; }
+.answer-marker-stem { width:2px; height:32px; background:var(--green-answer); margin:0 auto; }
+.answer-marker-dot  { width:14px; height:14px; border-radius:50%; background:var(--green-answer); border:3px solid #fff; box-shadow:0 2px 8px rgba(0,0,0,0.2); margin:0 auto; }
+.tick { position:absolute; top:50%; width:1px; height:10px; background:rgba(150,140,120,0.4); transform:translate(-50%,4px); pointer-events:none; }
+.tick-label { position:absolute; top:calc(50% + 15px); font-size:9px; color:#bbb; transform:translateX(-50%); pointer-events:none; letter-spacing:0.5px; }
+.instructions { text-align:center; font-size:11px; color:#999; font-style:italic; letter-spacing:0.5px; margin-top:10px; transition:opacity 0.3s; }
+.photo-nav { display:flex; gap:8px; justify-content:center; padding:9px 0 2px; }
+.nav-dot { width:8px; height:8px; border-radius:50%; background:var(--track); cursor:pointer; border:none; transition:background 0.2s, transform 0.2s; }
+.nav-dot.active { background:var(--navy); transform:scale(1.3); }
+.nav-dot:hover { background:var(--gold); }
+
+/* Lang */
+.lang-switcher { position:absolute; top:10px; right:10px; display:flex; gap:4px; z-index:100; }
+.lang-btn { background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.15); border-radius:2px; color:rgba(255,255,255,0.45); font-family:'Crimson Pro',serif; font-size:11px; font-weight:600; letter-spacing:1px; padding:3px 7px; cursor:pointer; transition:background 0.15s, color 0.15s; }
+.lang-btn:hover { background:rgba(255,255,255,0.14); color:rgba(255,255,255,0.75); }
+.lang-btn.active { background:var(--gold); border-color:var(--gold); color:var(--navy); }
+
+/* Mini photo thumbnail in WHERE panel */
+#mapThumb {
+  width:100%; flex-shrink:0;
+  border-radius:2px; overflow:hidden;
+  box-shadow:0 2px 10px rgba(0,0,0,0.18);
+}
+#mapThumbInner {
+  width:100%; height:130px;
+  background:#c8c0b0;
+  display:flex; align-items:center; justify-content:center;
+  overflow:hidden;
+}
+#mapThumbInner img {
+  width:100%; height:100%; object-fit:cover; display:block;
+}
+#mapThumbPlaceholder svg {
+  width:32px; height:32px; opacity:0.3; color:rgba(26,39,68,0.5);
+}
+
+
+#map, #map .leaflet-grab, #map .leaflet-container { cursor:crosshair !important; }
+.guess-pin { width:26px; height:26px; border-radius:50%; background:var(--navy); border:3px solid #fff; color:var(--gold); font-family:'Playfair Display',serif; font-size:11px; font-weight:700; display:flex; align-items:center; justify-content:center; box-shadow:0 2px 8px rgba(0,0,0,0.35); }
+.answer-pin { width:36px; height:36px; display:flex; align-items:center; justify-content:center; position:relative; animation:starPop 0.6s cubic-bezier(0.34,1.56,0.64,1); }
+@keyframes starPop { from{transform:scale(0) rotate(-30deg);opacity:0} to{transform:scale(1) rotate(0);opacity:1} }
+.answer-ripple { position:absolute; width:54px; height:54px; border-radius:50%; border:2px solid var(--gold); animation:ripple 1.4s ease-out forwards; top:-9px; left:-9px; }
+@keyframes ripple { from{transform:scale(0.4);opacity:0.9} to{transform:scale(2.2);opacity:0} }
+</style>
+</head>
+<body>
+<div class="stage">
+  <div class="lang-switcher">
+    <button class="lang-btn active" onclick="setLang('en')">EN</button>
+    <button class="lang-btn" onclick="setLang('fi')">FI</button>
+    <button class="lang-btn" onclick="setLang('sv')">SV</button>
+  </div>
+  <div class="card">
+
+    <div class="card-header">
+      <span class="photo-badge" id="photoBadge">Photo 1</span>
+      <span style="flex:1"></span>
+      <span class="header-label" data-i18n="headerLabel"></span>
+    </div>
+
+    <div class="tabs">
+      <button class="tab-btn active" id="tabWhen"  onclick="switchTab('when')"  data-i18n="tabWhen"></button>
+      <button class="tab-btn"        id="tabWhere" onclick="switchTab('where')" data-i18n="tabWhere"></button>
+    </div>
+
+    <div class="card-body">
+
+      <div class="photo-zone" id="photoZone">
+        <div class="photo-placeholder">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
+            <rect x="2" y="5" width="20" height="14" rx="2"/>
+            <circle cx="12" cy="12" r="4"/>
+            <path d="M9 5l1.5-2h3L15 5"/>
+          </svg>
+          <span data-i18n="addPhoto"></span>
+        </div>
+      </div>
+
+      <div id="mapContainer">
+        <div id="map"></div>
+        <div id="crosshair">
+          <div id="crosshair-h"></div>
+          <div id="crosshair-v"></div>
+          <div id="crosshair-center"></div>
+        </div>
+      </div>
+
+      <div class="panel">
+
+        <!-- WHEN -->
+        <div class="tab-panel active" id="panelWhen">
+          <div class="panel-heading" data-i18n="makeYourGuess"></div>
+          <div class="year-boxes">
+            <div class="year-box earliest">
+              <div class="year-box-label" data-i18n="earliest"></div>
+              <div class="year-box-value" id="earliestDisplay">1895</div>
+            </div>
+            <div class="year-box latest">
+              <div class="year-box-label" data-i18n="latest"></div>
+              <div class="year-box-value" id="latestDisplay">1930</div>
+            </div>
+          </div>
+          <div class="divider"></div>
+          <button class="reveal-btn" id="revealWhenBtn" onclick="revealWhen()"></button>
+          <div class="answer-panel" id="answerWhenPanel">
+            <div class="answer-label" data-i18n="answer"></div>
+            <div class="answer-year" id="answerYear">1908</div>
+            <div class="answer-note" id="answerNote"></div>
+          </div>
+          <button class="reset-btn" id="resetBtn" onclick="resetAll()"></button>
+        </div>
+
+        <!-- WHERE -->
+        <div class="tab-panel" id="panelWhere">
+          <div id="mapThumb">
+            <div id="mapThumbInner">
+              <div class="photo-placeholder" id="mapThumbPlaceholder">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4">
+                  <rect x="2" y="5" width="20" height="14" rx="2"/>
+                  <circle cx="12" cy="12" r="4"/>
+                  <path d="M9 5l1.5-2h3L15 5"/>
+                </svg>
+              </div>
+            </div>
+          </div>
+          <div class="guess-list" id="guessList"></div>
+          <button class="reveal-btn" id="revealWhereBtn" onclick="revealWhere()"></button>
+          <div class="answer-panel" id="answerWherePanel">
+            <div class="answer-label" data-i18n="answer"></div>
+            <div class="answer-note" id="answerWhereNote"></div>
+          </div>
+          <div class="panel-heading" style="margin-top:auto; padding-top:8px;" data-i18n="whereGuess"></div>
+          <p class="where-hint" data-i18n="whereHint"></p>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="timeline-section" id="timelineSection">
+      <div class="timeline-range-labels">
+        <span id="rangeStartLabel">1880</span>
+        <span id="rangeEndLabel">1970</span>
+      </div>
+      <div class="timeline-track-wrap" id="trackWrap">
+        <div class="timeline-track">
+          <div class="timeline-fill" id="fill"></div>
+        </div>
+        <div class="handle earliest" id="handleEarliest" tabindex="0"><div class="handle-tip" id="tipEarliest"></div></div>
+        <div class="handle latest"   id="handleLatest"   tabindex="0"><div class="handle-tip" id="tipLatest"></div></div>
+        <div class="answer-marker" id="answerMarker">
+          <div class="answer-marker-flag" id="answerFlag"></div>
+          <div class="answer-marker-stem"></div>
+          <div class="answer-marker-dot"></div>
+        </div>
+      </div>
+      <div class="instructions" id="instructions" data-i18n="instructions"></div>
+      <div class="photo-nav" id="photoNav"></div>
+    </div>
+
+  </div>
+</div>
+<script>
+// ── i18n ──────────────────────────────────────────────────────────────────────
+const i18n = {
+  en: {
+    headerLabel:'Guess the photo', tabWhen:'⏱ When', tabWhere:'📍 Where',
+    makeYourGuess:'Make your guess', earliest:'Earliest', latest:'Latest',
+    answer:'Answer', revealBtn:'Reveal Answer', revealedBtn:'✓ Answer revealed',
+    resetBtn:'↺ Next photo / Reset', photoBadge:n=>`Photo ${n}`,
+    addPhoto:'Add your photo here',
+    whereGuess:'Place your guesses',
+    whereHint:'Move the crosshair on the map, then click to place a numbered guess',
+    instructions:'Drag the <span style="color:var(--blue-marker);font-weight:600">blue</span> and <span style="color:var(--red-marker);font-weight:600">red</span> handles to set your earliest and latest guess',
+    guessLabel:n=>`Guess ${n}`, revealWhere:'Reveal Location', revealedWhere:'✓ Location revealed',
+    noGuesses:'No guesses yet',
+  },
+  fi: {
+    headerLabel:'Arvaa kuva', tabWhen:'⏱ Milloin', tabWhere:'📍 Missä',
+    makeYourGuess:'Arvauksesi', earliest:'Aikaisin', latest:'Myöhäisin',
+    answer:'Vastaus', revealBtn:'Paljasta vastaus', revealedBtn:'✓ Vastaus paljastettu',
+    resetBtn:'↺ Seuraava kuva / Uusi', photoBadge:n=>`Kuva ${n}`,
+    addPhoto:'Lisää kuva tähän',
+    whereGuess:'Merkitse arvauksesi',
+    whereHint:'Siirrä tähtäin kartalla ja napsauta lisätäksesi numeroidun arvauksen',
+    instructions:'Vedä <span style="color:var(--blue-marker);font-weight:600">sinistä</span> ja <span style="color:var(--red-marker);font-weight:600">punaista</span> kahvaa asettaaksesi arvauksesi',
+    guessLabel:n=>`Arvaus ${n}`, revealWhere:'Paljasta sijainti', revealedWhere:'✓ Sijainti paljastettu',
+    noGuesses:'Ei arvauksia vielä',
+  },
+  sv: {
+    headerLabel:'Gissa fotot', tabWhen:'⏱ När', tabWhere:'📍 Var',
+    makeYourGuess:'Din gissning', earliest:'Tidigast', latest:'Senast',
+    answer:'Svar', revealBtn:'Visa svaret', revealedBtn:'✓ Svaret avslöjat',
+    resetBtn:'↺ Nästa foto / Börja om', photoBadge:n=>`Foto ${n}`,
+    addPhoto:'Lägg till ditt foto här',
+    whereGuess:'Placera dina gissningar',
+    whereHint:'Flytta hårkorstet på kartan och klicka för att placera en gissningsnål',
+    instructions:'Dra det <span style="color:var(--blue-marker);font-weight:600">blå</span> och det <span style="color:var(--red-marker);font-weight:600">röda</span> handtaget för att ange din gissning',
+    guessLabel:n=>`Gissning ${n}`, revealWhere:'Visa platsen', revealedWhere:'✓ Platsen avslöjad',
+    noGuesses:'Inga gissningar ännu',
+  },
+};
+
+// ── Photo data ────────────────────────────────────────────────────────────────
+const photos = [
+  { answer:1908, rangeStart:1880, rangeEnd:1970, defaultEarliest:1895, defaultLatest:1930,
+    note:{ en:'Tramway tracks visible — the network opened in 1908.', fi:'Raitiotiekiskot näkyvissä — verkko avattiin 1908.', sv:'Spårvagnsspår syns — nätet öppnade 1908.' },
+    location:[60.4518,22.2666],
+    locationNote:{ en:'Turku Market Square (Kauppatori)', fi:'Turun kauppatori', sv:'Salutorget i Åbo' } },
+  { answer:1928, rangeStart:1880, rangeEnd:1970, defaultEarliest:1910, defaultLatest:1945,
+    note:{ en:'Steam vessels common. The large harbour crane was installed in 1926.', fi:'Höyryalukset yleisiä. Suuri satamanosturi asennettiin 1926.', sv:'Ångfartyg vanliga. Hamnkranen installerades 1926.' },
+    location:[60.4380,22.2590],
+    locationNote:{ en:'South Harbour (Eteläranta)', fi:'Eteläinen satama', sv:'Södra hamnen' } },
+  { answer:1962, rangeStart:1940, rangeEnd:2000, defaultEarliest:1950, defaultLatest:1975,
+    note:{ en:'The tram network ended in 1972. A Volvo PV444 is visible on the left.', fi:'Raitiotieverkko lopetettiin 1972. Vasemmalla näkyy Volvo PV444.', sv:'Spårvagnsnätet lades ner 1972. En Volvo PV444 syns till vänster.' },
+    location:[60.4539,22.2598],
+    locationNote:{ en:'Aurakatu street', fi:'Aurakatu', sv:'Aurakatu gatan' } },
+  { answer:1915, rangeStart:1880, rangeEnd:1970, defaultEarliest:1905, defaultLatest:1935,
+    note:{ en:'The station building opened in 1909. Horse-drawn carts still outnumber motorcars.', fi:'Asemarakennus avattiin 1909. Hevosvetoisia vaunuja enemmän kuin autoja.', sv:'Stationsbyggnaden öppnade 1909. Hästdragna vagnar fler än bilar.' },
+    location:[60.4572,22.2688],
+    locationNote:{ en:'Turku Central Railway Station', fi:'Turun rautatieasema', sv:'Åbo järnvägsstation' } },
+  { answer:1934, rangeStart:1880, rangeEnd:1970, defaultEarliest:1920, defaultLatest:1950,
+    note:{ en:'The surrounding park was redesigned in 1929. Note the period fashion.', fi:'Ympäröivä puisto suunniteltiin uudelleen 1929. Huomaa aikakauden muoti.', sv:'Den omgivande parken omgestaltades 1929. Lägg märke till tidens mode.' },
+    location:[60.4534,22.2720],
+    locationNote:{ en:'Turku Cathedral Hill', fi:'Tuomiokirkkomäki', sv:'Domkyrkobacken' } },
+];
+
+// ── State ─────────────────────────────────────────────────────────────────────
+let currentPhoto=0, currentLang='en', currentTab='when';
+let rangeStart, rangeEnd, earliestVal, latestVal;
+let whenRevealed=false, whereRevealed=false;
+let guesses=[], mapInstance=null, answerMapMarker=null;
+
+// ── DOM refs ──────────────────────────────────────────────────────────────────
+const trackWrap     = document.getElementById('trackWrap');
+const fill          = document.getElementById('fill');
+const handleE       = document.getElementById('handleEarliest');
+const handleL       = document.getElementById('handleLatest');
+const tipE          = document.getElementById('tipEarliest');
+const tipL          = document.getElementById('tipLatest');
+const dispE         = document.getElementById('earliestDisplay');
+const dispL         = document.getElementById('latestDisplay');
+const answerMarkerEl= document.getElementById('answerMarker');
+const answerFlag    = document.getElementById('answerFlag');
+const answerWhenPanel= document.getElementById('answerWhenPanel');
+const answerYear    = document.getElementById('answerYear');
+const answerNote    = document.getElementById('answerNote');
+const revealWhenBtn = document.getElementById('revealWhenBtn');
+const revealWhereBtn= document.getElementById('revealWhereBtn');
+const resetBtn      = document.getElementById('resetBtn');
+const instructions  = document.getElementById('instructions');
+const photoNav      = document.getElementById('photoNav');
+const guessList     = document.getElementById('guessList');
+const timelineSection=document.getElementById('timelineSection');
+const photoZone     = document.getElementById('photoZone');
+const mapContainer  = document.getElementById('mapContainer');
+const crosshair     = document.getElementById('crosshair');
+const crosshairH    = document.getElementById('crosshair-h');
+const crosshairV    = document.getElementById('crosshair-v');
+const crosshairC    = document.getElementById('crosshair-center');
+const answerWherePanel=document.getElementById('answerWherePanel');
+const answerWhereNote =document.getElementById('answerWhereNote');
+
+// ── Language ──────────────────────────────────────────────────────────────────
+function setLang(lang) {
+  currentLang = lang;
+  document.querySelectorAll('.lang-btn').forEach(b => b.classList.toggle('active', b.textContent.toLowerCase()===lang));
+  applyTranslations();
+}
+function applyTranslations() {
+  const t = i18n[currentLang];
+  document.querySelectorAll('[data-i18n]').forEach(el => { const k=el.dataset.i18n; if(t[k]!==undefined) el.innerHTML=t[k]; });
+  document.getElementById('photoBadge').textContent = t.photoBadge(currentPhoto+1);
+  revealWhenBtn.innerHTML  = whenRevealed  ? t.revealedBtn   : t.revealBtn;
+  revealWhereBtn.innerHTML = whereRevealed ? t.revealedWhere : t.revealWhere;
+  resetBtn.innerHTML = t.resetBtn;
+  answerNote.textContent = photos[currentPhoto].note[currentLang];
+  answerWhereNote.textContent = photos[currentPhoto].locationNote[currentLang];
+  renderGuessList();
+}
+
+function syncThumb() {
+  const src = document.querySelector('#photoZone img');
+  const inner = document.getElementById('mapThumbInner');
+  const placeholder = document.getElementById('mapThumbPlaceholder');
+  if (src) {
+    inner.innerHTML = `<img src="${src.src}" alt="">`;
+  } else {
+    inner.innerHTML = '';
+    inner.appendChild(placeholder || (() => {
+      const d = document.createElement('div');
+      d.className = 'photo-placeholder';
+      d.id = 'mapThumbPlaceholder';
+      d.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="2" y="5" width="20" height="14" rx="2"/><circle cx="12" cy="12" r="4"/><path d="M9 5l1.5-2h3L15 5"/></svg>`;
+      return d;
+    })());
+  }
+}
+
+function switchTab(tab) {
+  currentTab = tab;
+  document.getElementById('tabWhen').classList.toggle('active',  tab==='when');
+  document.getElementById('tabWhere').classList.toggle('active', tab==='where');
+  document.getElementById('panelWhen').classList.toggle('active',  tab==='when');
+  document.getElementById('panelWhere').classList.toggle('active', tab==='where');
+  timelineSection.style.display = tab==='when' ? '' : 'none';
+  photoZone.style.display       = tab==='when' ? '' : 'none';
+  mapContainer.classList.toggle('active', tab==='where');
+  crosshair.classList.toggle('active', tab==='where' && !whereRevealed);
+  if (tab==='where') { syncThumb(); initMap(); setTimeout(()=>mapInstance&&mapInstance.invalidateSize(),60); }
+}
+
+// ── Map ───────────────────────────────────────────────────────────────────────
+function initMap() {
+  if (mapInstance) return;
+  mapInstance = L.map('map',{ center:[60.452,22.270], zoom:15, zoomControl:true });
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{ attribution:'© OpenStreetMap', maxZoom:19 }).addTo(mapInstance);
+
+  // Remove default hand/grab cursor from map
+  mapInstance.getContainer().style.cursor = 'crosshair';
+  mapInstance.on('drag', ()=> mapInstance.getContainer().style.cursor = 'grabbing');
+  mapInstance.on('dragend', ()=> mapInstance.getContainer().style.cursor = 'crosshair');
+
+  // Hide crosshair lines until mouse enters the map
+  crosshairH.style.opacity = '0';
+  crosshairV.style.opacity = '0';
+  crosshairC.style.opacity = '0';
+
+  mapInstance.on('mousemove', e => {
+    if (whereRevealed) return;
+    const cp = mapInstance.latLngToContainerPoint(e.latlng);
+    crosshairH.style.top     = cp.y + 'px';
+    crosshairV.style.left    = cp.x + 'px';
+    crosshairC.style.top     = cp.y + 'px';
+    crosshairC.style.left    = cp.x + 'px';
+    crosshairH.style.opacity = '1';
+    crosshairV.style.opacity = '1';
+    crosshairC.style.opacity = '1';
+  });
+
+  mapInstance.on('mouseout', () => {
+    crosshairH.style.opacity = '0';
+    crosshairV.style.opacity = '0';
+    crosshairC.style.opacity = '0';
+  });
+
+  mapInstance.on('click', e => { if (!whereRevealed) placeGuess(e.latlng); });
+}
+
+function placeGuess(latlng) {
+  const n = guesses.length + 1;
+  const marker = L.marker(latlng, { icon: makeGuessIcon(n), draggable:false }).addTo(mapInstance);
+  guesses.push({ latlng, marker, n });
+  renderGuessList();
+}
+function makeGuessIcon(n) {
+  return L.divIcon({ className:'', html:`<div class="guess-pin">${n}</div>`, iconSize:[26,26], iconAnchor:[13,13] });
+}
+function removeGuess(n) {
+  const idx = guesses.findIndex(g=>g.n===n);
+  if (idx===-1) return;
+  mapInstance.removeLayer(guesses[idx].marker);
+  guesses.splice(idx,1);
+  guesses.forEach((g,i)=>{ g.n=i+1; g.marker.setIcon(makeGuessIcon(i+1)); });
+  renderGuessList();
+}
+function renderGuessList() {
+  const t = i18n[currentLang];
+  guessList.innerHTML = '';
+  if (guesses.length===0) {
+    guessList.innerHTML = `<span style="font-size:11px;color:#bbb;font-style:italic;text-align:center;padding:4px 0;">${t.noGuesses}</span>`;
+    return;
+  }
+  guesses.forEach(g => {
+    const item = document.createElement('div');
+    item.className = 'guess-item';
+    item.innerHTML = `<div class="guess-number">${g.n}</div><span class="guess-label">${t.guessLabel(g.n)}</span>${!whereRevealed?`<button class="guess-remove" onclick="removeGuess(${g.n})">×</button>`:''}`;
+    guessList.appendChild(item);
+  });
+}
+
+// ── Reveal Where ──────────────────────────────────────────────────────────────
+function revealWhere() {
+  if (whereRevealed) return;
+  whereRevealed = true;
+  const p = photos[currentPhoto];
+  crosshair.classList.remove('active');
+
+  const icon = L.divIcon({
+    className:'',
+    html:`<div class="answer-pin"><div class="answer-ripple"></div><svg width="34" height="34" viewBox="0 0 32 32"><polygon points="16,2 19.5,12 30,12 21.5,18.5 24.5,29 16,23 7.5,29 10.5,18.5 2,12 12.5,12" fill="#c8a84b" stroke="#fff" stroke-width="1.5"/></svg></div>`,
+    iconSize:[34,34], iconAnchor:[17,17],
+  });
+  answerMapMarker = L.marker(p.location, { icon }).addTo(mapInstance);
+
+  const allPts = guesses.map(g=>g.latlng).concat([L.latLng(p.location)]);
+  if (allPts.length > 1) mapInstance.fitBounds(L.latLngBounds(allPts).pad(0.35));
+  else mapInstance.setView(p.location, 16);
+
+  revealWhereBtn.innerHTML = i18n[currentLang].revealedWhere;
+  revealWhereBtn.classList.add('revealed');
+  answerWherePanel.classList.add('visible');
+  answerWhereNote.textContent = p.locationNote[currentLang];
+  renderGuessList();
+}
+
+// ── Reveal When ───────────────────────────────────────────────────────────────
+function revealWhen() {
+  if (whenRevealed) return;
+  whenRevealed = true;
+  const p = photos[currentPhoto];
+  answerMarkerEl.style.left = yearToPct(p.answer) + '%';
+  answerMarkerEl.classList.add('visible');
+  answerFlag.textContent = p.answer;
+  answerWhenPanel.classList.add('visible');
+  revealWhenBtn.classList.add('revealed');
+  revealWhenBtn.innerHTML = i18n[currentLang].revealedBtn;
+  resetBtn.classList.add('visible');
+  instructions.style.opacity = '0.4';
+  handleE.style.cursor = 'default';
+  handleL.style.cursor = 'default';
+}
+
+// ── Reset ─────────────────────────────────────────────────────────────────────
+function resetAll() {
+  guesses.forEach(g=>mapInstance&&mapInstance.removeLayer(g.marker));
+  guesses = [];
+  if (answerMapMarker&&mapInstance) { mapInstance.removeLayer(answerMapMarker); answerMapMarker=null; }
+  if (mapInstance) { mapInstance.remove(); mapInstance=null; }
+  loadPhoto((currentPhoto+1)%photos.length);
+}
+
+// ── Init & Load ───────────────────────────────────────────────────────────────
+function init() {
+  photoNav.innerHTML = '';
+  photos.forEach((_,i)=>{
+    const dot = document.createElement('button');
+    dot.className = 'nav-dot'+(i===0?' active':'');
+    dot.onclick = ()=>{ resetAll(); currentPhoto=i; loadPhoto(i); };
+    photoNav.appendChild(dot);
+  });
+  loadPhoto(0);
+}
+
+function loadPhoto(idx) {
+  currentPhoto=idx; whenRevealed=false; whereRevealed=false;
+  const p=photos[idx];
+  rangeStart=p.rangeStart; rangeEnd=p.rangeEnd;
+  earliestVal=p.defaultEarliest; latestVal=p.defaultLatest;
+
+  answerYear.textContent = p.answer;
+  document.getElementById('rangeStartLabel').textContent = rangeStart;
+  document.getElementById('rangeEndLabel').textContent   = rangeEnd;
+  answerMarkerEl.classList.remove('visible');
+  answerWhenPanel.classList.remove('visible');
+  answerWherePanel.classList.remove('visible');
+  resetBtn.classList.remove('visible');
+  revealWhenBtn.classList.remove('revealed');
+  revealWhereBtn.classList.remove('revealed');
+  instructions.style.opacity='1';
+  handleE.style.cursor='grab'; handleL.style.cursor='grab';
+  crosshair.classList.remove('active');
+
+  document.querySelectorAll('.nav-dot').forEach((d,i)=>d.classList.toggle('active',i===idx));
+  switchTab('when');
+  applyTranslations();
+  buildTicks();
+  updateHandles();
+}
+
+// ── Timeline ──────────────────────────────────────────────────────────────────
+function yearToPct(yr){ return ((yr-rangeStart)/(rangeEnd-rangeStart))*100; }
+function pctToYear(p) { return Math.round(rangeStart+(p/100)*(rangeEnd-rangeStart)); }
+function clamp(v,lo,hi){ return Math.max(lo,Math.min(hi,v)); }
+
+function buildTicks() {
+  trackWrap.querySelectorAll('.tick,.tick-label').forEach(el=>el.remove());
+  for (let yr=Math.ceil(rangeStart/10)*10; yr<=rangeEnd; yr+=10) {
+    const pct=yearToPct(yr);
+    const t=document.createElement('div'); t.className='tick'; t.style.left=pct+'%'; trackWrap.appendChild(t);
+    if (yr%20===0){ const l=document.createElement('div'); l.className='tick-label'; l.style.left=pct+'%'; l.textContent=yr; trackWrap.appendChild(l); }
+  }
+}
+function updateHandles() {
+  const pE=yearToPct(earliestVal), pL=yearToPct(latestVal);
+  handleE.style.left=pE+'%'; handleL.style.left=pL+'%';
+  fill.style.left=pE+'%'; fill.style.width=(pL-pE)+'%';
+  dispE.textContent=earliestVal; dispL.textContent=latestVal;
+  tipE.textContent=earliestVal;  tipL.textContent=latestVal;
+  if (whenRevealed) answerMarkerEl.style.left=yearToPct(photos[currentPhoto].answer)+'%';
+}
+function makeDraggable(handle, isE) {
+  let drag=false;
+  const pctFrom=e=>{ const b=trackWrap.getBoundingClientRect(),x=e.touches?e.touches[0].clientX:e.clientX; return clamp(((x-b.left)/b.width)*100,0,100); };
+  const onMove=e=>{ if(!drag)return; e.preventDefault(); handle.classList.add('dragging');
+    const yr=pctToYear(pctFrom(e)), disp=isE?dispE:dispL, prev=disp.textContent;
+    if(isE) earliestVal=clamp(yr,rangeStart,latestVal-1); else latestVal=clamp(yr,earliestVal+1,rangeEnd);
+    updateHandles();
+    if(String(isE?earliestVal:latestVal)!==prev){disp.classList.remove('pop');void disp.offsetWidth;disp.classList.add('pop');}
+  };
+  const onUp=()=>{ drag=false; handle.classList.remove('dragging');
+    document.removeEventListener('mousemove',onMove); document.removeEventListener('mouseup',onUp);
+    document.removeEventListener('touchmove',onMove); document.removeEventListener('touchend',onUp);
+  };
+  handle.addEventListener('mousedown',e=>{ if(whenRevealed)return; drag=true; e.preventDefault(); document.addEventListener('mousemove',onMove); document.addEventListener('mouseup',onUp); });
+  handle.addEventListener('touchstart',e=>{ if(whenRevealed)return; drag=true; document.addEventListener('touchmove',onMove,{passive:false}); document.addEventListener('touchend',onUp); });
+  handle.addEventListener('keydown',e=>{
+    if(whenRevealed)return; const s=e.shiftKey?5:1;
+    if(e.key==='ArrowLeft'||e.key==='ArrowDown'){ if(isE)earliestVal=clamp(earliestVal-s,rangeStart,latestVal-1);else latestVal=clamp(latestVal-s,earliestVal+1,rangeEnd); updateHandles(); e.preventDefault(); }
+    if(e.key==='ArrowRight'||e.key==='ArrowUp') { if(isE)earliestVal=clamp(earliestVal+s,rangeStart,latestVal-1);else latestVal=clamp(latestVal+s,earliestVal+1,rangeEnd); updateHandles(); e.preventDefault(); }
+  });
+}
+makeDraggable(handleE,true);
+makeDraggable(handleL,false);
+init();
+</script>
+</body>
+</html>
