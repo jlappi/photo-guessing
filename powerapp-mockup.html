@@ -7,35 +7,22 @@
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 :root {
-  --primary: #0078d4;
-  --primary-dark: #005a9e;
-  --bg: #f3f2f1;
-  --white: #ffffff;
-  --border: #d2d0ce;
-  --text: #323130;
-  --text-muted: #605e5c;
-  --derived-bg: #f0f6ff;
-  --derived-border: #b3d0f0;
-  --nav-bg: #0078d4;
-  --nav-active: #ffffff;
-  --danger: #a4262c;
-  --success: #107c10;
-  --header-bg: #0078d4;
+  --primary: #0078d4; --primary-dark: #005a9e; --primary-light: #e8f0fb;
+  --bg: #f3f2f1; --white: #ffffff; --border: #d2d0ce;
+  --text: #323130; --text-muted: #605e5c;
+  --derived-bg: #f0f6ff; --derived-border: #b3d0f0;
+  --nav-bg: #0078d4; --danger: #a4262c; --success: #107c10;
+  --add-bg: #e6f2fa; --add-border: #0078d4;
 }
 body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
 
-/* App shell */
-.app-header { background: var(--header-bg); color: #fff; padding: 0 16px; height: 48px; display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
+/* App header */
+.app-header { background: var(--primary); color: #fff; padding: 0 16px; height: 48px; display: flex; align-items: center; flex-shrink: 0; }
 .app-title { font-size: 16px; font-weight: 600; }
-.app-subtitle { font-size: 12px; opacity: 0.75; }
 
-.app-body { flex: 1; overflow: hidden; display: flex; flex-direction: column; }
-
-/* Screen container */
+/* Screen */
 .screen { display: none; flex-direction: column; flex: 1; overflow: hidden; }
 .screen.active { display: flex; }
-
-/* Top bar within screen */
 .screen-topbar { background: var(--white); border-bottom: 1px solid var(--border); padding: 12px 16px; display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
 .screen-title { font-size: 18px; font-weight: 600; flex: 1; }
 .screen-content { flex: 1; overflow-y: auto; padding: 16px; }
@@ -45,91 +32,115 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); co
 .btn-primary { background: var(--primary); color: #fff; }
 .btn-primary:hover { background: var(--primary-dark); }
 .btn-default { background: var(--white); color: var(--primary); border: 1px solid var(--primary); }
-.btn-default:hover { background: #e8f0fb; }
-.btn-danger { background: var(--white); color: var(--danger); border: 1px solid var(--danger); }
+.btn-default:hover { background: var(--primary-light); }
+.btn-danger  { background: var(--white); color: var(--danger); border: 1px solid var(--danger); }
 .btn-danger:hover { background: #fde7e9; }
 .btn-back { background: none; color: var(--primary); border: none; font-size: 14px; cursor: pointer; display: flex; align-items: center; gap: 4px; padding: 4px 0; }
 .btn-back:hover { text-decoration: underline; }
-.btn-icon { background: none; border: none; cursor: pointer; color: var(--text-muted); font-size: 16px; padding: 4px 8px; border-radius: 2px; }
-.btn-icon:hover { background: var(--bg); color: var(--danger); }
 
-/* Gallery / list */
-.gallery { display: flex; flex-direction: column; gap: 0; background: var(--white); border: 1px solid var(--border); border-radius: 2px; overflow: hidden; }
-.gallery-item { padding: 12px 16px; border-bottom: 1px solid var(--border); cursor: pointer; display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; transition: background 0.1s; }
-.gallery-item:last-child { border-bottom: none; }
-.gallery-item:hover { background: #e8f0fb; }
-.gallery-item-main { flex: 1; }
-.gallery-item-title { font-size: 14px; font-weight: 600; color: var(--text); }
-.gallery-item-sub { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
-.gallery-item-tags { display: flex; gap: 6px; margin-top: 4px; flex-wrap: wrap; }
-.tag { font-size: 11px; padding: 2px 8px; border-radius: 10px; background: #e8f0fb; color: var(--primary); }
-.tag.green { background: #dff6dd; color: var(--success); }
-.chevron { color: var(--text-muted); font-size: 18px; align-self: center; }
+/* Inline add button — small "+" next to dropdown */
+.field-row { display: flex; gap: 6px; align-items: flex-end; }
+.field-row .form-group { flex: 1; }
+.btn-add-inline {
+  flex-shrink: 0; width: 36px; height: 36px; border-radius: 2px;
+  background: var(--primary); color: #fff; border: none; font-size: 20px; line-height: 1;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  transition: background 0.15s; align-self: flex-end;
+}
+.btn-add-inline:hover { background: var(--primary-dark); }
+.btn-add-inline[title]:hover::after {
+  content: attr(title); position: absolute; background: #333; color: #fff;
+  font-size: 11px; padding: 3px 7px; border-radius: 2px; white-space: nowrap;
+  margin-top: 36px; pointer-events: none;
+}
 
-/* Search */
-.search-bar { display: flex; gap: 8px; margin-bottom: 12px; }
-.search-input { flex: 1; padding: 8px 12px; border: 1px solid var(--border); border-radius: 2px; font-size: 14px; }
-.search-input:focus { outline: none; border-color: var(--primary); }
+/* Inline add panel */
+.inline-add-panel {
+  display: none; flex-direction: column; gap: 10px;
+  background: var(--add-bg); border: 1px solid var(--add-border);
+  border-radius: 2px; padding: 14px 14px 12px; margin-top: 4px;
+  animation: slideDown 0.15s ease;
+}
+.inline-add-panel.open { display: flex; }
+@keyframes slideDown { from { opacity:0; transform:translateY(-6px); } to { opacity:1; transform:translateY(0); } }
+.inline-add-title {
+  font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;
+  color: var(--primary); margin-bottom: 2px; display: flex; align-items: center; gap: 6px;
+}
+.inline-add-actions { display: flex; gap: 6px; }
+.btn-save-inline { padding: 5px 14px; font-size: 13px; }
+.btn-cancel-inline { background: none; border: none; color: var(--text-muted); font-size: 13px; cursor: pointer; padding: 5px 8px; }
+.btn-cancel-inline:hover { color: var(--danger); }
 
 /* Form */
-.form-grid { display: flex; flex-direction: column; gap: 16px; max-width: 700px; }
+.form-grid { display: flex; flex-direction: column; gap: 16px; max-width: 680px; }
 .form-group { display: flex; flex-direction: column; gap: 4px; }
 .form-label { font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
-.form-label .required { color: var(--danger); margin-left: 2px; }
-.form-control { padding: 8px 10px; border: 1px solid var(--border); border-radius: 2px; font-size: 14px; background: var(--white); color: var(--text); }
+.form-label .req { color: var(--danger); margin-left: 2px; }
+.form-control { padding: 8px 10px; border: 1px solid var(--border); border-radius: 2px; font-size: 14px; background: var(--white); color: var(--text); width: 100%; }
 .form-control:focus { outline: none; border-color: var(--primary); }
 select.form-control { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23605e5c' d='M6 8L1 3h10z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 10px center; padding-right: 28px; }
-textarea.form-control { resize: vertical; min-height: 80px; }
+textarea.form-control { resize: vertical; min-height: 70px; }
 
-/* Derived fields */
-.derived-field { padding: 8px 10px; border: 1px solid var(--derived-border); border-radius: 2px; background: var(--derived-bg); font-size: 14px; color: var(--text-muted); display: flex; align-items: center; gap: 8px; min-height: 38px; }
-.derived-badge { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--primary); background: #cce0f5; padding: 1px 6px; border-radius: 10px; white-space: nowrap; }
-.derived-value { flex: 1; font-style: italic; }
+/* Derived / auto-filled */
+.derived-field { padding: 8px 10px; border: 1px solid var(--derived-border); border-radius: 2px; background: var(--derived-bg); font-size: 14px; display: flex; align-items: center; gap: 8px; min-height: 38px; }
+.derived-badge { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--primary); background: #cce0f5; padding: 1px 6px; border-radius: 10px; white-space: nowrap; }
+.derived-value { flex: 1; }
 .derived-hint { font-size: 11px; color: #999; margin-top: 2px; }
+
+/* Section divider */
+.section-divider { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); padding: 4px 0 6px; border-bottom: 1px solid var(--border); }
 
 /* Toggle */
 .toggle-wrap { display: flex; align-items: center; gap: 10px; }
 .toggle { position: relative; width: 44px; height: 24px; }
 .toggle input { opacity: 0; width: 0; height: 0; }
 .toggle-slider { position: absolute; inset: 0; background: var(--border); border-radius: 24px; cursor: pointer; transition: background 0.2s; }
-.toggle-slider::before { content: ''; position: absolute; height: 18px; width: 18px; left: 3px; bottom: 3px; background: white; border-radius: 50%; transition: transform 0.2s; }
+.toggle-slider::before { content:''; position: absolute; height: 18px; width: 18px; left: 3px; bottom: 3px; background: white; border-radius: 50%; transition: transform 0.2s; }
 .toggle input:checked + .toggle-slider { background: var(--primary); }
 .toggle input:checked + .toggle-slider::before { transform: translateX(20px); }
-.toggle-label { font-size: 14px; }
 
 /* Form actions */
-.form-actions { display: flex; gap: 8px; padding-top: 8px; border-top: 1px solid var(--border); margin-top: 8px; }
+.form-actions { display: flex; gap: 8px; padding-top: 8px; border-top: 1px solid var(--border); margin-top: 4px; }
 
-/* Section divider */
-.section-divider { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); padding: 4px 0 8px; border-bottom: 1px solid var(--border); margin-bottom: 4px; }
+/* Gallery */
+.gallery { display: flex; flex-direction: column; background: var(--white); border: 1px solid var(--border); border-radius: 2px; overflow: hidden; }
+.gallery-item { padding: 12px 16px; border-bottom: 1px solid var(--border); cursor: pointer; display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; transition: background 0.1s; }
+.gallery-item:last-child { border-bottom: none; }
+.gallery-item:hover { background: var(--primary-light); }
+.gallery-item-title { font-size: 14px; font-weight: 600; }
+.gallery-item-sub { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+.gallery-item-tags { display: flex; gap: 6px; margin-top: 5px; flex-wrap: wrap; }
+.tag { font-size: 11px; padding: 2px 8px; border-radius: 10px; background: var(--primary-light); color: var(--primary); }
+.tag.green { background: #dff6dd; color: var(--success); }
+.tag.amber { background: #fff4ce; color: #7a5f00; }
+.chevron { color: var(--text-muted); font-size: 18px; align-self: center; }
 
-/* Info box */
-.info-box { background: #e8f0fb; border-left: 3px solid var(--primary); padding: 10px 14px; border-radius: 0 2px 2px 0; font-size: 13px; color: var(--text-muted); margin-bottom: 12px; }
+/* Search */
+.search-bar { display: flex; gap: 8px; margin-bottom: 12px; }
+.search-input { flex:1; padding: 8px 12px; border: 1px solid var(--border); border-radius: 2px; font-size: 14px; }
+.search-input:focus { outline: none; border-color: var(--primary); }
 
 /* Bottom nav */
-.bottom-nav { background: var(--nav-bg); display: flex; border-top: none; flex-shrink: 0; }
-.nav-item { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 8px 4px; cursor: pointer; color: rgba(255,255,255,0.65); border-top: 3px solid transparent; transition: color 0.15s, border-color 0.15s; gap: 3px; }
+.bottom-nav { background: var(--nav-bg); display: flex; flex-shrink: 0; }
+.nav-item { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 8px 4px; cursor: pointer; color: rgba(255,255,255,0.6); border-top: 3px solid transparent; transition: color 0.15s, border-color 0.15s; gap: 2px; }
 .nav-item:hover { color: rgba(255,255,255,0.9); }
 .nav-item.active { color: #fff; border-top-color: #fff; }
 .nav-icon { font-size: 18px; }
-.nav-label { font-size: 10px; font-weight: 600; letter-spacing: 0.5px; }
+.nav-label { font-size: 10px; font-weight: 600; }
 
-/* Empty state */
-.empty-state { text-align: center; padding: 40px 20px; color: var(--text-muted); }
-.empty-state-icon { font-size: 40px; margin-bottom: 10px; }
+.info-note { background: var(--primary-light); border-left: 3px solid var(--primary); padding: 9px 12px; font-size: 13px; color: var(--text-muted); border-radius: 0 2px 2px 0; }
 </style>
 </head>
 <body>
 
 <div class="app-header">
-  <div>
-    <div class="app-title">Informationshantering</div>
-  </div>
+  <div class="app-title">Informationshantering</div>
 </div>
 
-<div class="app-body">
+<div style="flex:1; overflow:hidden; display:flex; flex-direction:column;">
 
-  <!-- ── SKÄRM 1: Huvudlista Browse ── -->
+  <!-- ══ SKÄRM 1: Huvudlista Browse ══ -->
   <div class="screen active" id="scrBrowse">
     <div class="screen-topbar">
       <div class="screen-title">Huvudlista</div>
@@ -143,66 +154,152 @@ textarea.form-control { resize: vertical; min-height: 80px; }
     </div>
   </div>
 
-  <!-- ── SKÄRM 2: Huvudlista Edit/New ── -->
+  <!-- ══ SKÄRM 2: Ny post / Redigera ══ -->
   <div class="screen" id="scrEdit">
     <div class="screen-topbar">
-      <button class="btn-back" onclick="goBack('scrBrowse')">← Tillbaka</button>
+      <button class="btn-back" onclick="navigate('scrBrowse','nav-browse')">← Tillbaka</button>
       <div class="screen-title" id="editTitle">Ny post</div>
     </div>
     <div class="screen-content">
-      <div class="info-box">
-        <strong>Informationsmaterial</strong> och <strong>Informationslager</strong> fylls i automatiskt baserat på vald Informationsgrupp och kan inte redigeras manuellt.
-      </div>
       <div class="form-grid">
+
+        <!-- ── Delprocess ── -->
         <div class="section-divider">Process</div>
         <div class="form-group">
-          <label class="form-label">Delprocess eller fas <span class="required">*</span></label>
-          <select class="form-control" id="fldDelprocess">
-            <option value="">— Välj process —</option>
-            <option>Planering av rekrytering och antagning</option>
-            <option>Organiserande av urvalsprov</option>
-            <option>Antagning (Grundexamensstuderanden)</option>
-            <option>Förberedelser för verksamhetsplanering</option>
-            <option>Genomförande av verksamhetsplanering</option>
-            <option>Utlysning</option>
-            <option>Planering av finansieringsansökan</option>
-            <option>Genomförande av forskning (inkl. rapportering)</option>
-          </select>
+          <label class="form-label">Delprocess eller fas <span class="req">*</span></label>
+          <div class="field-row">
+            <div class="form-group">
+              <select class="form-control" id="fldDelprocess">
+                <option value="">— Välj process —</option>
+              </select>
+            </div>
+            <button class="btn-add-inline" onclick="togglePanel('panelProcess')" title="Lägg till ny process">+</button>
+          </div>
+          <!-- Inline add: Delprocess -->
+          <div class="inline-add-panel" id="panelProcess">
+            <div class="inline-add-title">➕ Lägg till ny process</div>
+            <div class="form-group">
+              <label class="form-label">Namn på process / fas <span class="req">*</span></label>
+              <input class="form-control" id="newProcessNamn" placeholder="t.ex. Hantering av examensbevis">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Verksamhetsområde</label>
+              <select class="form-control" id="newProcessOmrade">
+                <option value="">— Välj —</option>
+                <option>00 STYRNING, PLANERING OCH UPPFÖLJNING</option>
+                <option>03 UTBILDNING OCH UNDERVISNING</option>
+                <option>04 FORSKNING</option>
+                <option>05 SAMVERKAN</option>
+              </select>
+            </div>
+            <div class="inline-add-actions">
+              <button class="btn btn-primary btn-save-inline" onclick="addProcess()">Spara och välj</button>
+              <button class="btn-cancel-inline" onclick="togglePanel('panelProcess')">Avbryt</button>
+            </div>
+          </div>
         </div>
 
+        <!-- ── Informationsgrupp ── -->
         <div class="section-divider">Informationshierarki</div>
         <div class="form-group">
-          <label class="form-label">Informationsgrupp <span class="required">*</span></label>
-          <select class="form-control" id="fldInformationsgrupp" onchange="cascadeGroup()">
-            <option value="">— Välj informationsgrupp —</option>
-            <option data-material="Ansökningshandlingar" data-lager="Studeranderegistret">Antagningshandlingar</option>
-            <option data-material="Resultathandlingar" data-lager="Studeranderegistret">Studieresultat</option>
-            <option data-material="Budgetunderlag" data-lager="Ekonomisystemet">Budgetplanering</option>
-            <option data-material="Verksamhetsplaner" data-lager="Ekonomisystemet">Verksamhetsplanering</option>
-            <option data-material="Forskningsansökningar" data-lager="Forskningsdatabasen">Externt finansierad forskning</option>
-            <option data-material="Projektrapporter" data-lager="Forskningsdatabasen">Forskningsrapportering</option>
-          </select>
+          <label class="form-label">Informationsgrupp <span class="req">*</span></label>
+          <div class="field-row">
+            <div class="form-group">
+              <select class="form-control" id="fldInformationsgrupp" onchange="cascadeGroup()">
+                <option value="">— Välj informationsgrupp —</option>
+              </select>
+            </div>
+            <button class="btn-add-inline" onclick="togglePanel('panelGrupp')" title="Lägg till ny grupp">+</button>
+          </div>
+          <!-- Inline add: Informationsgrupp -->
+          <div class="inline-add-panel" id="panelGrupp">
+            <div class="inline-add-title">➕ Lägg till ny informationsgrupp</div>
+            <div class="form-group">
+              <label class="form-label">Namn <span class="req">*</span></label>
+              <input class="form-control" id="newGruppNamn" placeholder="t.ex. Examenshandlingar">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Informationsmaterial <span class="req">*</span></label>
+              <div class="field-row">
+                <div class="form-group">
+                  <select class="form-control" id="newGruppMaterial">
+                    <option value="">— Välj material —</option>
+                  </select>
+                </div>
+                <button class="btn-add-inline" onclick="togglePanel('panelMaterialNested')" title="Lägg till nytt material" style="width:30px;height:30px;font-size:16px;">+</button>
+              </div>
+              <!-- Nested inline add: Informationsmaterial -->
+              <div class="inline-add-panel" id="panelMaterialNested" style="margin-top:6px; background:#daeeff; border-color: #005a9e;">
+                <div class="inline-add-title" style="color:#005a9e;">➕ Lägg till nytt informationsmaterial</div>
+                <div class="form-group">
+                  <label class="form-label">Namn <span class="req">*</span></label>
+                  <input class="form-control" id="newMatNamnNested" placeholder="t.ex. Examensbevis">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Informationslager <span class="req">*</span></label>
+                  <div class="field-row">
+                    <div class="form-group">
+                      <select class="form-control" id="newMatLagerNested">
+                        <option value="">— Välj lager —</option>
+                      </select>
+                    </div>
+                    <button class="btn-add-inline" onclick="togglePanel('panelLagerNested')" title="Lägg till nytt lager" style="width:30px;height:30px;font-size:16px;">+</button>
+                  </div>
+                  <!-- Deep nested inline add: Informationslager -->
+                  <div class="inline-add-panel" id="panelLagerNested" style="margin-top:6px; background:#cce8ff; border-color:#003d6b;">
+                    <div class="inline-add-title" style="color:#003d6b;">➕ Lägg till nytt informationslager</div>
+                    <div class="form-group">
+                      <label class="form-label">Namn <span class="req">*</span></label>
+                      <input class="form-control" id="newLagerNamnNested" placeholder="t.ex. Arkivsystemet">
+                    </div>
+                    <div class="inline-add-actions">
+                      <button class="btn btn-primary btn-save-inline" onclick="addLagerNested()">Spara och välj</button>
+                      <button class="btn-cancel-inline" onclick="togglePanel('panelLagerNested')">Avbryt</button>
+                    </div>
+                  </div>
+                </div>
+                <div class="inline-add-actions">
+                  <button class="btn btn-primary btn-save-inline" onclick="addMaterialNested()">Spara och välj</button>
+                  <button class="btn-cancel-inline" onclick="togglePanel('panelMaterialNested')">Avbryt</button>
+                </div>
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Typ av information</label>
+              <select class="form-control" id="newGruppTyp">
+                <option value="">— Välj —</option>
+                <option>Offentlig handling</option>
+                <option>Intern handling</option>
+                <option>Sekretessbelagd handling</option>
+              </select>
+            </div>
+            <div class="inline-add-actions">
+              <button class="btn btn-primary btn-save-inline" onclick="addGrupp()">Spara och välj</button>
+              <button class="btn-cancel-inline" onclick="togglePanel('panelGrupp')">Avbryt</button>
+            </div>
+          </div>
         </div>
 
+        <!-- Auto-filled fields -->
         <div class="form-group">
           <label class="form-label">Informationsmaterial</label>
-          <div class="derived-field" id="fldInformationsmaterial">
+          <div class="derived-field">
             <span class="derived-badge">Auto</span>
-            <span class="derived-value" id="derivedMaterial">Välj en informationsgrupp ovan</span>
+            <span class="derived-value" id="derivedMaterial" style="color:#999;font-style:italic;">Välj en informationsgrupp ovan</span>
           </div>
           <div class="derived-hint">Hämtas automatiskt från vald informationsgrupp</div>
         </div>
-
         <div class="form-group">
           <label class="form-label">Informationslager</label>
-          <div class="derived-field" id="fldInformationslager">
+          <div class="derived-field">
             <span class="derived-badge">Auto</span>
-            <span class="derived-value" id="derivedLager">Välj en informationsgrupp ovan</span>
+            <span class="derived-value" id="derivedLager" style="color:#999;font-style:italic;">Välj en informationsgrupp ovan</span>
           </div>
           <div class="derived-hint">Hämtas automatiskt från informationsmaterialet</div>
         </div>
 
-        <div class="section-divider">System & övrigt</div>
+        <!-- ── Informationssystem ── -->
+        <div class="section-divider">System &amp; övrigt</div>
         <div class="form-group">
           <label class="form-label">Informationssystem</label>
           <select class="form-control" id="fldSystem">
@@ -224,246 +321,280 @@ textarea.form-control { resize: vertical; min-height: 80px; }
           <label class="form-label">Inkluderas i beskrivning av handlingars offentlighet</label>
           <div class="toggle-wrap">
             <label class="toggle">
-              <input type="checkbox" id="fldInkluderas">
+              <input type="checkbox" id="fldInkluderas" onchange="document.getElementById('toggleLabel').textContent=this.checked?'Ja':'Nej'">
               <span class="toggle-slider"></span>
             </label>
-            <span class="toggle-label" id="toggleLabel">Nej</span>
+            <span id="toggleLabel">Nej</span>
           </div>
         </div>
 
         <div class="form-actions">
           <button class="btn btn-primary" onclick="saveRecord()">Spara</button>
-          <button class="btn btn-default" onclick="goBack('scrBrowse')">Avbryt</button>
-          <button class="btn btn-danger" id="deleteBtn" onclick="deleteRecord()" style="margin-left:auto; display:none;">Ta bort</button>
+          <button class="btn btn-default" onclick="navigate('scrBrowse','nav-browse')">Avbryt</button>
+          <button class="btn btn-danger" id="deleteBtn" onclick="deleteRecord()" style="margin-left:auto;display:none;">Ta bort</button>
         </div>
-      </div>
+
+      </div><!-- /form-grid -->
     </div>
   </div>
 
-  <!-- ── SKÄRM 3: Informationsgrupp ── -->
-  <div class="screen" id="scrGrupp">
-    <div class="screen-topbar">
-      <div class="screen-title">Informationsgrupp</div>
-      <button class="btn btn-primary" onclick="alert('Formulär för ny informationsgrupp öppnas här')">+ Ny grupp</button>
-    </div>
-    <div class="screen-content">
-      <div class="gallery">
-        <div class="gallery-item" onclick="alert('Redigeringsformulär öppnas')">
-          <div class="gallery-item-main">
-            <div class="gallery-item-title">Antagningshandlingar</div>
-            <div class="gallery-item-sub">Material: Ansökningshandlingar</div>
-            <div class="gallery-item-tags"><span class="tag">Offentlig</span><span class="tag green">Innehåller ej personuppgifter</span></div>
-          </div>
-          <span class="chevron">›</span>
-        </div>
-        <div class="gallery-item" onclick="alert('Redigeringsformulär öppnas')">
-          <div class="gallery-item-main">
-            <div class="gallery-item-title">Studieresultat</div>
-            <div class="gallery-item-sub">Material: Resultathandlingar</div>
-            <div class="gallery-item-tags"><span class="tag">Sekretessbelagd</span><span class="tag" style="background:#fde7e9;color:#a4262c">Innehåller personuppgifter</span></div>
-          </div>
-          <span class="chevron">›</span>
-        </div>
-        <div class="gallery-item" onclick="alert('Redigeringsformulär öppnas')">
-          <div class="gallery-item-main">
-            <div class="gallery-item-title">Budgetplanering</div>
-            <div class="gallery-item-sub">Material: Budgetunderlag</div>
-            <div class="gallery-item-tags"><span class="tag">Intern</span><span class="tag green">Innehåller ej personuppgifter</span></div>
-          </div>
-          <span class="chevron">›</span>
-        </div>
-        <div class="gallery-item" onclick="alert('Redigeringsformulär öppnas')">
-          <div class="gallery-item-main">
-            <div class="gallery-item-title">Externt finansierad forskning</div>
-            <div class="gallery-item-sub">Material: Forskningsansökningar</div>
-            <div class="gallery-item-tags"><span class="tag">Offentlig</span></div>
-          </div>
-          <span class="chevron">›</span>
-        </div>
-      </div>
-    </div>
-  </div>
+</div><!-- /app-body -->
 
-  <!-- ── SKÄRM 4: Informationsmaterial ── -->
-  <div class="screen" id="scrMaterial">
-    <div class="screen-topbar">
-      <div class="screen-title">Informationsmaterial</div>
-      <button class="btn btn-primary" onclick="alert('Formulär för nytt informationsmaterial öppnas här')">+ Nytt material</button>
-    </div>
-    <div class="screen-content">
-      <div class="gallery">
-        <div class="gallery-item" onclick="alert('Redigeringsformulär öppnas')">
-          <div class="gallery-item-main">
-            <div class="gallery-item-title">Ansökningshandlingar</div>
-            <div class="gallery-item-sub">Lager: Studeranderegistret · Förvaringstid: 2 år</div>
-          </div>
-          <span class="chevron">›</span>
-        </div>
-        <div class="gallery-item" onclick="alert('Redigeringsformulär öppnas')">
-          <div class="gallery-item-main">
-            <div class="gallery-item-title">Resultathandlingar</div>
-            <div class="gallery-item-sub">Lager: Studeranderegistret · Förvaringstid: 10 år</div>
-          </div>
-          <span class="chevron">›</span>
-        </div>
-        <div class="gallery-item" onclick="alert('Redigeringsformulär öppnas')">
-          <div class="gallery-item-main">
-            <div class="gallery-item-title">Budgetunderlag</div>
-            <div class="gallery-item-sub">Lager: Ekonomisystemet · Förvaringstid: 10 år</div>
-          </div>
-          <span class="chevron">›</span>
-        </div>
-        <div class="gallery-item" onclick="alert('Redigeringsformulär öppnas')">
-          <div class="gallery-item-main">
-            <div class="gallery-item-title">Forskningsansökningar</div>
-            <div class="gallery-item-sub">Lager: Forskningsdatabasen · Förvaringstid: 5 år</div>
-          </div>
-          <span class="chevron">›</span>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ── SKÄRM 5: Informationslager ── -->
-  <div class="screen" id="scrLager">
-    <div class="screen-topbar">
-      <div class="screen-title">Informationslager</div>
-      <button class="btn btn-primary" onclick="alert('Formulär för nytt informationslager öppnas här')">+ Nytt lager</button>
-    </div>
-    <div class="screen-content">
-      <div class="gallery">
-        <div class="gallery-item" onclick="alert('Redigeringsformulär öppnas')">
-          <div class="gallery-item-main">
-            <div class="gallery-item-title">Studeranderegistret</div>
-            <div class="gallery-item-sub">Ansvarig enhet: Studieservice</div>
-          </div>
-          <span class="chevron">›</span>
-        </div>
-        <div class="gallery-item" onclick="alert('Redigeringsformulär öppnas')">
-          <div class="gallery-item-main">
-            <div class="gallery-item-title">Ekonomisystemet</div>
-            <div class="gallery-item-sub">Ansvarig enhet: Ekonomiservice</div>
-          </div>
-          <span class="chevron">›</span>
-        </div>
-        <div class="gallery-item" onclick="alert('Redigeringsformulär öppnas')">
-          <div class="gallery-item-main">
-            <div class="gallery-item-title">Forskningsdatabasen</div>
-            <div class="gallery-item-sub">Ansvarig enhet: Forskningsservice</div>
-          </div>
-          <span class="chevron">›</span>
-        </div>
-        <div class="gallery-item" onclick="alert('Redigeringsformulär öppnas')">
-          <div class="gallery-item-main">
-            <div class="gallery-item-title">HR-systemet</div>
-            <div class="gallery-item-sub">Ansvarig enhet: Personalservice</div>
-          </div>
-          <span class="chevron">›</span>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ── SKÄRM 6: Verksamhetsprocesser ── -->
-  <div class="screen" id="scrProcess">
-    <div class="screen-topbar">
-      <div class="screen-title">Verksamhetsprocesser</div>
-      <button class="btn btn-primary" onclick="alert('Formulär för ny process öppnas här')">+ Ny process</button>
-    </div>
-    <div class="screen-content">
-      <div class="gallery">
-        <div class="gallery-item" onclick="alert('Redigeringsformulär öppnas')">
-          <div class="gallery-item-main">
-            <div class="gallery-item-title">Planering av rekrytering och antagning</div>
-            <div class="gallery-item-sub">Område: 03 UTBILDNING OCH UNDERVISNING · Ägare: Utbildningsservice</div>
-          </div>
-          <span class="chevron">›</span>
-        </div>
-        <div class="gallery-item" onclick="alert('Redigeringsformulär öppnas')">
-          <div class="gallery-item-main">
-            <div class="gallery-item-title">Förberedelser för verksamhetsplanering</div>
-            <div class="gallery-item-sub">Område: 00 STYRNING, PLANERING OCH UPPFÖLJNING · Ägare: Verksamhetsledning</div>
-          </div>
-          <span class="chevron">›</span>
-        </div>
-        <div class="gallery-item" onclick="alert('Redigeringsformulär öppnas')">
-          <div class="gallery-item-main">
-            <div class="gallery-item-title">Planering av finansieringsansökan</div>
-            <div class="gallery-item-sub">Område: 04 FORSKNING · Ägare: Forskningsservice</div>
-          </div>
-          <span class="chevron">›</span>
-        </div>
-      </div>
-    </div>
-  </div>
-
-</div><!-- end app-body -->
-
-<!-- Bottom navigation -->
+<!-- Bottom nav -->
 <div class="bottom-nav">
-  <div class="nav-item active" id="nav-browse" onclick="navigate('scrBrowse', 'nav-browse')">
-    <span class="nav-icon">☰</span>
-    <span class="nav-label">Huvudlista</span>
+  <div class="nav-item active" id="nav-browse" onclick="navigate('scrBrowse','nav-browse')">
+    <span class="nav-icon">☰</span><span class="nav-label">Huvudlista</span>
   </div>
-  <div class="nav-item" id="nav-grupp" onclick="navigate('scrGrupp', 'nav-grupp')">
-    <span class="nav-icon">🏷</span>
-    <span class="nav-label">Grupp</span>
+  <div class="nav-item" id="nav-grupp" onclick="navigate('scrBrowse','nav-browse'); alert('I detta mockup finns Informationsgrupp tillgänglig via + i Ny post-formuläret. I den färdiga appen kan en separat hanteringsskärm läggas till här.')">
+    <span class="nav-icon">🏷</span><span class="nav-label">Grupp</span>
   </div>
-  <div class="nav-item" id="nav-material" onclick="navigate('scrMaterial', 'nav-material')">
-    <span class="nav-icon">📄</span>
-    <span class="nav-label">Material</span>
+  <div class="nav-item" id="nav-material" onclick="navigate('scrBrowse','nav-browse'); alert('Informationsmaterial hanteras via + i Ny post-formuläret. En separat skärm kan läggas till.')">
+    <span class="nav-icon">📄</span><span class="nav-label">Material</span>
   </div>
-  <div class="nav-item" id="nav-lager" onclick="navigate('scrLager', 'nav-lager')">
-    <span class="nav-icon">🗄</span>
-    <span class="nav-label">Lager</span>
+  <div class="nav-item" id="nav-lager" onclick="navigate('scrBrowse','nav-browse'); alert('Informationslager hanteras via + i Ny post-formuläret. En separat skärm kan läggas till.')">
+    <span class="nav-icon">🗄</span><span class="nav-label">Lager</span>
   </div>
-  <div class="nav-item" id="nav-process" onclick="navigate('scrProcess', 'nav-process')">
-    <span class="nav-icon">⚙</span>
-    <span class="nav-label">Processer</span>
+  <div class="nav-item" id="nav-process" onclick="navigate('scrBrowse','nav-browse'); alert('Processer hanteras via + i Ny post-formuläret. En separat skärm kan läggas till.')">
+    <span class="nav-icon">⚙</span><span class="nav-label">Processer</span>
   </div>
 </div>
 
 <script>
-// ── Sample data ───────────────────────────────────────────────────────────────
+// ── Reference data ────────────────────────────────────────────────────────────
+const data = {
+  processer: [
+    { id:1, namn:'Planering av rekrytering och antagning',    omrade:'03 UTBILDNING OCH UNDERVISNING' },
+    { id:2, namn:'Organiserande av urvalsprov',               omrade:'03 UTBILDNING OCH UNDERVISNING' },
+    { id:3, namn:'Antagning (Grundexamensstuderanden)',       omrade:'03 UTBILDNING OCH UNDERVISNING' },
+    { id:4, namn:'Förberedelser för verksamhetsplanering',   omrade:'00 STYRNING, PLANERING OCH UPPFÖLJNING' },
+    { id:5, namn:'Genomförande av verksamhetsplanering',     omrade:'00 STYRNING, PLANERING OCH UPPFÖLJNING' },
+    { id:6, namn:'Planering av finansieringsansökan',        omrade:'04 FORSKNING' },
+    { id:7, namn:'Genomförande av forskning (inkl. rapportering)', omrade:'04 FORSKNING' },
+  ],
+  lager: [
+    { id:1, namn:'Studeranderegistret' },
+    { id:2, namn:'Ekonomisystemet' },
+    { id:3, namn:'Forskningsdatabasen' },
+    { id:4, namn:'HR-systemet' },
+  ],
+  material: [
+    { id:1, namn:'Ansökningshandlingar',   lagerId:1 },
+    { id:2, namn:'Resultathandlingar',     lagerId:1 },
+    { id:3, namn:'Budgetunderlag',         lagerId:2 },
+    { id:4, namn:'Verksamhetsplaner',      lagerId:2 },
+    { id:5, namn:'Forskningsansökningar',  lagerId:3 },
+    { id:6, namn:'Projektrapporter',       lagerId:3 },
+  ],
+  grupper: [
+    { id:1, namn:'Antagningshandlingar',       materialId:1, typ:'Offentlig handling' },
+    { id:2, namn:'Studieresultat',             materialId:2, typ:'Sekretessbelagd handling' },
+    { id:3, namn:'Budgetplanering',            materialId:3, typ:'Intern handling' },
+    { id:4, namn:'Verksamhetsplanering',       materialId:4, typ:'Intern handling' },
+    { id:5, namn:'Externt finansierad forskning', materialId:5, typ:'Offentlig handling' },
+    { id:6, namn:'Forskningsrapportering',     materialId:6, typ:'Offentlig handling' },
+  ],
+};
+let nextIds = { p:8, l:5, m:7, g:7, r:5 };
+
 const records = [
-  { id:1, delprocess:'Planering av rekrytering och antagning', grupp:'Antagningshandlingar', material:'Ansökningshandlingar', lager:'Studeranderegistret', system:'Studieregistret (SISU)', kommentar:'', inkluderas:true },
-  { id:2, delprocess:'Genomförande av verksamhetsplanering', grupp:'Budgetplanering', material:'Budgetunderlag', lager:'Ekonomisystemet', system:'Ekonomisystemet (Handi)', kommentar:'Gäller budgetåret', inkluderas:false },
-  { id:3, delprocess:'Planering av finansieringsansökan', grupp:'Externt finansierad forskning', material:'Forskningsansökningar', lager:'Forskningsdatabasen', system:'Forskningsdatabasen', kommentar:'', inkluderas:true },
-  { id:4, delprocess:'Antagning (Grundexamensstuderanden)', grupp:'Studieresultat', material:'Resultathandlingar', lager:'Studeranderegistret', system:'Studieregistret (SISU)', kommentar:'Inkl. betyg och intyg', inkluderas:true },
+  { id:1, processId:1, gruppId:1, systemNamn:'Studieregistret (SISU)', kommentar:'', inkluderas:true },
+  { id:2, processId:5, gruppId:3, systemNamn:'Ekonomisystemet (Handi)', kommentar:'Gäller budgetåret', inkluderas:false },
+  { id:3, processId:6, gruppId:5, systemNamn:'Forskningsdatabasen', kommentar:'', inkluderas:true },
+  { id:4, processId:3, gruppId:2, systemNamn:'Studieregistret (SISU)', kommentar:'Inkl. betyg och intyg', inkluderas:true },
 ];
-let nextId = 5;
 let editingId = null;
 
-// ── Gallery rendering ─────────────────────────────────────────────────────────
-function renderGallery(data) {
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function lagerNamn(lagerId) { return (data.lager.find(x=>x.id===lagerId)||{}).namn || ''; }
+function materialNamn(materialId) { return (data.material.find(x=>x.id===materialId)||{}).namn || ''; }
+function materialLager(materialId) { const m = data.material.find(x=>x.id===materialId); return m ? lagerNamn(m.lagerId) : ''; }
+function gruppMaterial(gruppId) { const g = data.grupper.find(x=>x.id===gruppId); return g ? materialNamn(g.materialId) : ''; }
+function gruppLager(gruppId)    { const g = data.grupper.find(x=>x.id===gruppId); return g ? materialLager(g.materialId) : ''; }
+function processNamn(id)   { return (data.processer.find(x=>x.id===id)||{}).namn || ''; }
+function gruppNamn(id)     { return (data.grupper.find(x=>x.id===id)||{}).namn || ''; }
+
+// ── Populate dropdowns ────────────────────────────────────────────────────────
+function populateSelect(selId, items, valueFn, labelFn, selectedVal) {
+  const sel = document.getElementById(selId);
+  const first = sel.options[0];
+  sel.innerHTML = '';
+  sel.appendChild(first);
+  items.forEach(item => {
+    const o = document.createElement('option');
+    o.value = valueFn(item);
+    o.textContent = labelFn(item);
+    if (String(o.value) === String(selectedVal)) o.selected = true;
+    sel.appendChild(o);
+  });
+}
+function refreshAllDropdowns(selectedProcess, selectedGrupp) {
+  populateSelect('fldDelprocess', data.processer, x=>x.id, x=>x.namn, selectedProcess);
+  populateSelect('fldInformationsgrupp', data.grupper, x=>x.id, x=>x.namn, selectedGrupp);
+  populateSelect('newGruppMaterial', data.material, x=>x.id, x=>x.namn, '');
+  populateSelect('newMatLagerNested', data.lager, x=>x.id, x=>x.namn, '');
+}
+
+// ── Cascade ───────────────────────────────────────────────────────────────────
+function cascadeGroup() {
+  const sel = document.getElementById('fldInformationsgrupp');
+  const gId = parseInt(sel.value);
+  const mat  = gId ? gruppMaterial(gId) : '';
+  const lag  = gId ? gruppLager(gId)    : '';
+  setDerived(mat, lag);
+}
+function setDerived(mat, lag) {
+  const dm = document.getElementById('derivedMaterial');
+  const dl = document.getElementById('derivedLager');
+  dm.textContent = mat || 'Välj en informationsgrupp ovan';
+  dl.textContent = lag || 'Välj en informationsgrupp ovan';
+  dm.style.fontStyle = mat ? 'normal' : 'italic';
+  dl.style.fontStyle = lag ? 'normal' : 'italic';
+  dm.style.color = mat ? '#323130' : '#999';
+  dl.style.color = lag ? '#323130' : '#999';
+}
+
+// ── Inline panels ─────────────────────────────────────────────────────────────
+function togglePanel(id) {
+  const p = document.getElementById(id);
+  p.classList.toggle('open');
+}
+function closePanel(id) {
+  document.getElementById(id).classList.remove('open');
+}
+
+// ── Inline add: Process ───────────────────────────────────────────────────────
+function addProcess() {
+  const namn = document.getElementById('newProcessNamn').value.trim();
+  if (!namn) { alert('Ange ett namn.'); return; }
+  const omrade = document.getElementById('newProcessOmrade').value;
+  const id = nextIds.p++;
+  data.processer.push({ id, namn, omrade });
+  refreshAllDropdowns(id, document.getElementById('fldInformationsgrupp').value || '');
+  document.getElementById('newProcessNamn').value = '';
+  document.getElementById('newProcessOmrade').value = '';
+  closePanel('panelProcess');
+}
+
+// ── Inline add: Lager (nested) ────────────────────────────────────────────────
+function addLagerNested() {
+  const namn = document.getElementById('newLagerNamnNested').value.trim();
+  if (!namn) { alert('Ange ett namn.'); return; }
+  const id = nextIds.l++;
+  data.lager.push({ id, namn });
+  populateSelect('newMatLagerNested', data.lager, x=>x.id, x=>x.namn, id);
+  document.getElementById('newLagerNamnNested').value = '';
+  closePanel('panelLagerNested');
+}
+
+// ── Inline add: Material (nested in Grupp panel) ──────────────────────────────
+function addMaterialNested() {
+  const namn    = document.getElementById('newMatNamnNested').value.trim();
+  const lagerId = parseInt(document.getElementById('newMatLagerNested').value);
+  if (!namn)    { alert('Ange ett namn.'); return; }
+  if (!lagerId) { alert('Välj ett informationslager.'); return; }
+  const id = nextIds.m++;
+  data.material.push({ id, namn, lagerId });
+  populateSelect('newGruppMaterial', data.material, x=>x.id, x=>x.namn, id);
+  document.getElementById('newMatNamnNested').value = '';
+  closePanel('panelMaterialNested');
+}
+
+// ── Inline add: Grupp ─────────────────────────────────────────────────────────
+function addGrupp() {
+  const namn       = document.getElementById('newGruppNamn').value.trim();
+  const materialId = parseInt(document.getElementById('newGruppMaterial').value);
+  const typ        = document.getElementById('newGruppTyp').value;
+  if (!namn)       { alert('Ange ett namn.'); return; }
+  if (!materialId) { alert('Välj ett informationsmaterial.'); return; }
+  const id = nextIds.g++;
+  data.grupper.push({ id, namn, materialId, typ });
+  const curProcess = document.getElementById('fldDelprocess').value;
+  refreshAllDropdowns(curProcess, id);
+  cascadeGroup();
+  document.getElementById('newGruppNamn').value = '';
+  document.getElementById('newGruppMaterial').value = '';
+  document.getElementById('newGruppTyp').value = '';
+  closePanel('panelGrupp');
+}
+
+// ── Gallery ───────────────────────────────────────────────────────────────────
+function renderGallery(recs) {
   const g = document.getElementById('mainGallery');
-  if (data.length === 0) {
-    g.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📋</div><div>Inga poster hittades</div></div>';
-    return;
-  }
-  g.innerHTML = data.map(r => `
+  if (!recs.length) { g.innerHTML = '<div style="padding:32px;text-align:center;color:#999">Inga poster</div>'; return; }
+  g.innerHTML = recs.map(r => `
     <div class="gallery-item" onclick="openEdit(${r.id})">
-      <div class="gallery-item-main">
-        <div class="gallery-item-title">${r.grupp}</div>
-        <div class="gallery-item-sub">${r.delprocess}</div>
+      <div>
+        <div class="gallery-item-title">${gruppNamn(r.gruppId)}</div>
+        <div class="gallery-item-sub">${processNamn(r.processId)}</div>
         <div class="gallery-item-tags">
-          <span class="tag">${r.material}</span>
-          <span class="tag" style="background:#e8f3e8;color:#107c10">${r.lager}</span>
-          ${r.inkluderas ? '<span class="tag" style="background:#fff4ce;color:#7a5f00">Inkluderas i offentlighet</span>' : ''}
+          <span class="tag">${gruppMaterial(r.gruppId)}</span>
+          <span class="tag green">${gruppLager(r.gruppId)}</span>
+          ${r.inkluderas ? '<span class="tag amber">Inkluderas i offentlighet</span>' : ''}
         </div>
       </div>
       <span class="chevron">›</span>
-    </div>
-  `).join('');
+    </div>`).join('');
 }
 function filterGallery(q) {
   const lq = q.toLowerCase();
   renderGallery(records.filter(r =>
-    r.grupp.toLowerCase().includes(lq) ||
-    r.delprocess.toLowerCase().includes(lq) ||
-    r.material.toLowerCase().includes(lq) ||
-    r.lager.toLowerCase().includes(lq)
+    gruppNamn(r.gruppId).toLowerCase().includes(lq) ||
+    processNamn(r.processId).toLowerCase().includes(lq) ||
+    gruppMaterial(r.gruppId).toLowerCase().includes(lq) ||
+    gruppLager(r.gruppId).toLowerCase().includes(lq)
   ));
+}
+
+// ── Open New / Edit ───────────────────────────────────────────────────────────
+function openNew() {
+  editingId = null;
+  document.getElementById('editTitle').textContent = 'Ny post';
+  document.getElementById('deleteBtn').style.display = 'none';
+  refreshAllDropdowns('', '');
+  setDerived('', '');
+  document.getElementById('fldSystem').value = '';
+  document.getElementById('fldKommentar').value = '';
+  document.getElementById('fldInkluderas').checked = false;
+  document.getElementById('toggleLabel').textContent = 'Nej';
+  document.querySelectorAll('.inline-add-panel').forEach(p => p.classList.remove('open'));
+  navigate('scrEdit', null);
+}
+function openEdit(id) {
+  const r = records.find(x => x.id === id);
+  if (!r) return;
+  editingId = id;
+  document.getElementById('editTitle').textContent = 'Redigera post';
+  document.getElementById('deleteBtn').style.display = '';
+  refreshAllDropdowns(r.processId, r.gruppId);
+  cascadeGroup();
+  document.getElementById('fldSystem').value = r.systemNamn;
+  document.getElementById('fldKommentar').value = r.kommentar;
+  document.getElementById('fldInkluderas').checked = r.inkluderas;
+  document.getElementById('toggleLabel').textContent = r.inkluderas ? 'Ja' : 'Nej';
+  document.querySelectorAll('.inline-add-panel').forEach(p => p.classList.remove('open'));
+  navigate('scrEdit', null);
+}
+
+// ── Save / Delete ─────────────────────────────────────────────────────────────
+function saveRecord() {
+  const processId = parseInt(document.getElementById('fldDelprocess').value);
+  const gruppId   = parseInt(document.getElementById('fldInformationsgrupp').value);
+  if (!processId) { alert('Välj en delprocess.'); return; }
+  if (!gruppId)   { alert('Välj en informationsgrupp.'); return; }
+  const systemNamn  = document.getElementById('fldSystem').value;
+  const kommentar   = document.getElementById('fldKommentar').value;
+  const inkluderas  = document.getElementById('fldInkluderas').checked;
+  if (editingId) {
+    Object.assign(records.find(x=>x.id===editingId), { processId, gruppId, systemNamn, kommentar, inkluderas });
+  } else {
+    records.push({ id: nextIds.r++, processId, gruppId, systemNamn, kommentar, inkluderas });
+  }
+  navigate('scrBrowse', 'nav-browse');
+}
+function deleteRecord() {
+  if (!editingId || !confirm('Ta bort denna post?')) return;
+  records.splice(records.findIndex(x=>x.id===editingId), 1);
+  navigate('scrBrowse', 'nav-browse');
 }
 
 // ── Navigation ────────────────────────────────────────────────────────────────
@@ -474,97 +605,10 @@ function navigate(screenId, navId) {
   if (navId) document.getElementById(navId).classList.add('active');
   if (screenId === 'scrBrowse') renderGallery(records);
 }
-function goBack(screenId) {
-  navigate(screenId, screenId === 'scrBrowse' ? 'nav-browse' : null);
-}
-
-// ── Edit form ─────────────────────────────────────────────────────────────────
-function openNew() {
-  editingId = null;
-  document.getElementById('editTitle').textContent = 'Ny post';
-  document.getElementById('deleteBtn').style.display = 'none';
-  document.getElementById('fldDelprocess').value = '';
-  document.getElementById('fldInformationsgrupp').value = '';
-  document.getElementById('fldSystem').value = '';
-  document.getElementById('fldKommentar').value = '';
-  document.getElementById('fldInkluderas').checked = false;
-  document.getElementById('toggleLabel').textContent = 'Nej';
-  setDerived('', '');
-  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-  document.getElementById('scrEdit').classList.add('active');
-}
-function openEdit(id) {
-  const r = records.find(x => x.id === id);
-  if (!r) return;
-  editingId = id;
-  document.getElementById('editTitle').textContent = 'Redigera post';
-  document.getElementById('deleteBtn').style.display = '';
-  document.getElementById('fldDelprocess').value = r.delprocess;
-  document.getElementById('fldInformationsgrupp').value = r.grupp;
-  document.getElementById('fldSystem').value = r.system;
-  document.getElementById('fldKommentar').value = r.kommentar;
-  document.getElementById('fldInkluderas').checked = r.inkluderas;
-  document.getElementById('toggleLabel').textContent = r.inkluderas ? 'Ja' : 'Nej';
-  setDerived(r.material, r.lager);
-  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-  document.getElementById('scrEdit').classList.add('active');
-}
-
-// ── Cascade logic ─────────────────────────────────────────────────────────────
-function cascadeGroup() {
-  const sel = document.getElementById('fldInformationsgrupp');
-  const opt = sel.options[sel.selectedIndex];
-  const material = opt.dataset.material || '';
-  const lager    = opt.dataset.lager    || '';
-  setDerived(material, lager);
-}
-function setDerived(material, lager) {
-  document.getElementById('derivedMaterial').textContent = material || 'Välj en informationsgrupp ovan';
-  document.getElementById('derivedLager').textContent    = lager    || 'Välj en informationsgrupp ovan';
-  document.getElementById('derivedMaterial').style.fontStyle = material ? 'normal' : 'italic';
-  document.getElementById('derivedLager').style.fontStyle    = lager    ? 'normal' : 'italic';
-  document.getElementById('derivedMaterial').style.color = material ? '#323130' : '';
-  document.getElementById('derivedLager').style.color    = lager    ? '#323130' : '';
-}
-
-// ── Toggle label ──────────────────────────────────────────────────────────────
-document.getElementById('fldInkluderas').addEventListener('change', function() {
-  document.getElementById('toggleLabel').textContent = this.checked ? 'Ja' : 'Nej';
-});
-
-// ── Save ──────────────────────────────────────────────────────────────────────
-function saveRecord() {
-  const grupp = document.getElementById('fldInformationsgrupp').value;
-  if (!grupp) { alert('Välj en informationsgrupp.'); return; }
-  const delprocess = document.getElementById('fldDelprocess').value;
-  if (!delprocess) { alert('Välj en delprocess.'); return; }
-  const material = document.getElementById('derivedMaterial').textContent;
-  const lager    = document.getElementById('derivedLager').textContent;
-  const system   = document.getElementById('fldSystem').value;
-  const kommentar = document.getElementById('fldKommentar').value;
-  const inkluderas = document.getElementById('fldInkluderas').checked;
-  if (editingId) {
-    const r = records.find(x => x.id === editingId);
-    Object.assign(r, { delprocess, grupp, material, lager, system, kommentar, inkluderas });
-  } else {
-    records.push({ id: nextId++, delprocess, grupp, material, lager, system, kommentar, inkluderas });
-  }
-  navigate('scrBrowse', 'nav-browse');
-}
-
-// ── Delete ────────────────────────────────────────────────────────────────────
-function deleteRecord() {
-  if (!editingId) return;
-  if (!confirm('Ta bort denna post?')) return;
-  const idx = records.findIndex(x => x.id === editingId);
-  if (idx > -1) records.splice(idx, 1);
-  navigate('scrBrowse', 'nav-browse');
-}
 
 // ── Init ──────────────────────────────────────────────────────────────────────
 renderGallery(records);
+refreshAllDropdowns('', '');
 </script>
 </body>
 </html>
